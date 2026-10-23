@@ -1,0 +1,6 @@
+.bak-*/
+band-pos.json
+.claude-plugin/types/
+node_modules/
+.DS_Store
+航行日志/

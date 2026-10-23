@@ -1,0 +1,51 @@
+{
+  "name": "drift-watch",
+  "version": "0.1.1",
+  "description": "偏航观测板：对照目标、计划、实际步骤，算偏航指数，偏了提醒你和 Claude，再犯就暂停",
+  "author": {
+    "name": "Ryumuu"
+  },
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "escalation": {
+      "type": "string",
+      "title": "提醒过还再犯时怎么办",
+      "description": "remind 只再提醒；pause 暂停等你点继续或拉回；block 拦下一步、让 Claude 先对照目标解释",
+      "options": [
+        "remind",
+        "pause",
+        "block"
+      ],
+      "default": "pause"
+    },
+    "judgeModel": {
+      "type": "string",
+      "title": "可疑时用来判断是否离题的模型",
+      "description": "规则觉得可疑时才调用一次，off 表示完全不调用模型",
+      "options": [
+        "haiku",
+        "sonnet",
+        "off"
+      ],
+      "default": "haiku"
+    },
+    "logDir": {
+      "type": "string",
+      "title": "航行日志放在哪个文件夹",
+      "description": "绝对路径；留空就放在 ~/.claude/drift-watch/航行日志",
+      "default": ""
+    },
+    "apiKeychainService": {
+      "type": "string",
+      "title": "（可选）钥匙串里 Anthropic API 密钥的条目名",
+      "description": "仅 macOS。填了就用这把密钥直连 API 调小模型；留空则看环境变量 DRIFT_WATCH_API_KEY，都没有就走 Claude Code 自带的模型通道",
+      "default": ""
+    },
+    "apiKeychainAccount": {
+      "type": "string",
+      "title": "（可选）这个钥匙串条目的账户名",
+      "description": "条目有账户名时才需要填",
+      "default": ""
+    }
+  }
+}
