@@ -25,8 +25,24 @@ Claude Code 插件：把你的最初目标、计划和实际操作放在一起�
 
 ## 能看到什么
 
-- 输入框上方的小条：当前是否跑偏、偏离度、目标与阶段进度。
-- 输入 `/drift` 打开面板：结论、航迹、操作和跑偏记录。
+**输入框上方的小条**：Claude 干活时一直挂着，显示是否跑偏、偏离度、目标与阶段进度；跑偏暂停时直接在条上选下一步。
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/band-dark.png">
+  <img src="assets/screenshots/band-light.png" alt="对话界面里输入框上方的偏航观测小条：同一个报错出现了 4 次，已暂停，可选让它换个思路、继续或误报" width="800">
+</picture>
+
+**输入 `/drift` 打开的面板**：结论、目标与阶段进度、航迹（每段线的方向就是那一步朝哪走，偏得越歪离目标越远）、每一步的偏离角、跑偏记录和操作记录。
+
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/panel-dark.png">
+  <img src="assets/screenshots/panel-light.png" alt="偏航观测面板：跑偏了已暂停，航迹从起点往目标走，后几步逐渐偏右到 52 度" width="520">
+</picture>
+</p>
+
+<sub>图是用插件自己的绘图代码配一个示例任务（「把博客首页的加载时间降到 2 秒以内」，后几步反复出同一个构建报错）画的，不含真实对话；外框是示意。</sub>
+
 - 第一次提醒会把目标与问题交给当前 Claude；再犯时按设置暂停、拦下一步或继续提醒。
 - 暂停后可以选「没问题，继续」「这是误报」或「让它换个思路」。换思路先保存航行日志，再尝试交接；没有侧会话工具就退回原会话。
 

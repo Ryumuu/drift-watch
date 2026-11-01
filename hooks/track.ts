@@ -213,6 +213,7 @@ export function svgTrack(b: Board, width: number, now: number, kind: Kind) {
   // 偏了的那几段：角度 + 原因，标在段尾；同一侧挨太近就往下错开
   let notes = ''
   const lastY = { 1: -99, [-1]: -99 } as Record<number, number>
+  let nowSide = 0 // 段尾说明正好落在「现在」这个点上时，记下它在哪一侧，「现在在这」就让开
   for (const r of runsOf(steps, degs)) {
     const E = pts[r.to + 1]!
     const d = degs[r.to]!
@@ -220,6 +221,7 @@ export function svgTrack(b: Board, width: number, now: number, kind: Kind) {
     const { ang, why, outcome } = runText(b, steps, degs, r)
     const y = Math.max(E.y, lastY[sd]! + 32)
     lastY[sd] = y
+    if (E === P && Math.abs(y - P.y) < 24) nowSide = sd
     const x = E.x + sd * 14
     const room = sd > 0 ? W - x - 2 : x - 2
     const anchor = sd > 0 ? 'start' : 'end'
@@ -232,7 +234,9 @@ export function svgTrack(b: Board, width: number, now: number, kind: Kind) {
   const kc = KIND_VAR[kind]
   let nowMark = `<circle cx="${f1(P.x)}" cy="${f1(P.y)}" r="15" style="fill:${kc}" opacity=".14"/><circle cx="${f1(P.x)}" cy="${f1(P.y)}" r="9" style="fill:${kc}" opacity=".28"/>`
   nowMark += `<circle cx="${f1(P.x)}" cy="${f1(P.y)}" r="5.5" style="fill:var(--bg);stroke:${kc}" stroke-width="3"/>`
-  if (P.x + 22 + textW('现在在这', 12) < W) nowMark += tx(P.x + 22, P.y + 5, '现在在这', { size: 12, fill: kc, weight: 700 })
+  const nowW = textW('现在在这', 12)
+  if (nowSide <= 0 && P.x + 22 + nowW < W) nowMark += tx(P.x + 22, P.y + 5, '现在在这', { size: 12, fill: kc, weight: 700 })
+  else if (nowSide > 0 && P.x - 22 - nowW > LW + 10) nowMark += tx(P.x - 22, P.y + 14, '现在在这', { size: 12, fill: kc, weight: 700, anchor: 'end' })
 
   // 整体三个数（次要，压成一行）
   const st = trackStats(pts, CX, O, FAR, degs)
