@@ -6,6 +6,7 @@
     "name": "Ryumuu"
   },
   "types": "./types/index.d.ts",
+  "skills": "./skills/",
   "userConfig": {
     "escalation": {
       "type": "string",
@@ -21,7 +22,7 @@
     "judgeModel": {
       "type": "string",
       "title": "可疑时用来判断是否离题的模型",
-      "description": "规则觉得可疑时才调用一次，off 表示完全不调用模型",
+      "description": "概括目标和进度、估计偏离角，可疑时判断离题；会发送目标和最近操作摘要并消耗自己的额度，off 完全不调用插件模型",
       "options": [
         "haiku",
         "sonnet",
@@ -47,5 +48,7 @@
       "description": "条目有账户名时才需要填",
       "default": ""
     }
-  }
+  },
+  "license": "MIT",
+  "repository": "https://github.com/Ryumuu/drift-watch"
 }
