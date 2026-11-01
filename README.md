@@ -137,6 +137,18 @@ PY
 
 备份和新文件由 `mkstemp` 以仅当前用户可读写的权限创建。JSON 损坏时脚本报错并不写入，交给向导备份后修复。回退时让 AI 对比备份，只还原本插件改过的选项，别整份覆盖其他新增设置。
 
+## 插件会运行、发送和读取什么
+
+为了透明，这里把插件代码里所有对外动作列在一起：
+
+- **发送**：模型开启时，把目标、补充、计划、最近操作摘要（部分含错误摘要）发给 Claude Code 自带模型通道；配置了自备密钥时改为直连 `https://api.anthropic.com/v1/messages`。不发往其他任何地址。`judgeModel` 设为 `off` 就不发这些请求。
+- **运行**：只有填了 `apiKeychainService` 时，才运行 macOS 自带的 `/usr/bin/security find-generic-password` 读取那一条钥匙串密钥；不运行其他程序，不下载或安装任何包。
+- **读取**：环境变量 `DRIFT_WATCH_API_KEY`（备用密钥来源）和 `HOME`（定位日志目录）；当前会话的消息与轮次（恢复目标用）；自己写的航行日志和 `band-pos.json`。
+- **写入**：只写航行日志目录，以及手动开启调试时的 `/tmp/drift-band-diag.json`。
+- **桌面会话工具**：点「让它换个思路」时调用宿主的 `ccd_session.start_session` / `spawn_task` 开侧会话或交接卡片、`ccd_window.open_session_in` 分屏；`/drift probe` 只调用 `get_window_layout` 和 `list_start_targets` 检查这些工具够不够得着。
+- **替你发消息**：只在你点暂停面板上的「没问题，继续」或「让它换个思路」后，才向当前会话发一条继续或换思路的消息；第一次提醒是加进 Claude 的上下文，不是替你发言。
+- 不修改 Claude 的权限设置；`block` 只拦下一步并要求 Claude 先解释。
+
 ## 数据保存在哪里
 
 - 偏好由宿主保存在本机 `pluginConfigs`，不额外建立账号或上传偏好；宿主自身是否同步设置以其配置为准。
