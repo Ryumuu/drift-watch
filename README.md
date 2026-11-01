@@ -11,11 +11,11 @@ Claude Code 插件：把你的最初目标、计划和实际操作放在一起�
 
 ## 第一次用？跟 AI 说这三句话
 
-1. **「帮我安装偏航观测插件。」** 终端版可直接在 Claude Code 对话输入：
-   ```text
-   /plugin install drift-watch --marketplace Ryumuu/drift-watch
-   ```
-   出现添加 marketplace 的询问时选 `y`，再选安装范围（个人使用选 user）。桌面版在**输入框旁 + → Plugins → Add marketplace** 填 `Ryumuu/drift-watch`，再点 **Add plugin**。按宿主提示完成配置；带 Skill 的插件安装后如提示重启/重载，照提示做。
+1. **「帮我装这个插件：https://github.com/Ryumuu/drift-watch」** 把这句连同网址发给 Claude，它会自己读仓库、完成安装，装好后照提示重开一次对话。
+   <details><summary>想自己手动装</summary>
+
+   在 Claude Code 对话里输入 `/plugin install drift-watch --marketplace Ryumuu/drift-watch`，问是否添加 marketplace 时选 `y`，范围选 user。桌面版也可以在**输入框旁 + → Plugins → Add marketplace** 填 `Ryumuu/drift-watch`，再点 **Add plugin**。
+   </details>
 2. **「开始用偏航观测。」** AI 会先检查是否加载，有设置就沿用；第一次按你的用途提问，说明费用和数据去向，征得同意后才保存偏好。
 3. **「跑一下偏航观测的示例。」** AI 会在唯一临时目录创建并修改一个小文本文件，再核对文件内容和插件实际生成的航行日志。规则示例不需要额外网站登录或 API 密钥；使用 Claude 本身仍需要可用账户。
 
