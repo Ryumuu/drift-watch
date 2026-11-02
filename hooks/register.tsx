@@ -183,6 +183,8 @@ const NOT_TASK = /^(This session is being continued|Another Claude session sent|
 let scannedAt = -1
 async function recoverGoal($: EngineInterface) {
   try {
+    const before = await read($, board)
+    if (before.goal || before.awaitingGoal) return
     const turns = await $.session.turns()
     if (turns === scannedAt) return
     const ms = await $.session.messages()
@@ -204,8 +206,8 @@ async function recoverGoal($: EngineInterface) {
     if (ms.length) scannedAt = turns // 记录还是空的（刚开会话）就下一拍再看
     if (pack) {
       const st = pack
-      await update($, board, b => (b.goal ? b : packBoard(b.task + 1, st)))
-    } else if (goal) await update($, board, b => (b.goal ? b : { ...emptyBoard(b.task + 1, goal), stats: b.stats, muted: [] }))
+      await update($, board, b => (b.task !== before.task || b.goal || b.awaitingGoal ? b : packBoard(b.task + 1, st)))
+    } else if (goal) await update($, board, b => (b.task !== before.task || b.goal || b.awaitingGoal ? b : { ...emptyBoard(b.task + 1, goal), stats: b.stats, muted: [] }))
   } catch {
     // 读不到记录就算了，等你下一句
   }
@@ -440,7 +442,7 @@ export const register: Register = (on, options) => {
     const [sub, ...rest] = args.split(/\s+/)
     const text = rest.join(' ').trim()
     if (sub === 'new') {
-      await update($, board, b => ({ ...emptyBoard(b.task + 1, cut(text, 300)), stats: b.stats }))
+      await update($, board, b => ({ ...emptyBoard(b.task + 1, cut(text, 300)), stats: b.stats, awaitingGoal: !text }))
       void openPane($)
       return { text: text ? `偏航观测：新任务，目标「${cut(text, 60)}」` : '偏航观测：已清空，下一句话当作新目标' }
     }
@@ -735,7 +737,7 @@ export const register: Register = (on, options) => {
           <Text dimColor wrap="wrap">
             跑偏分 {b.score}/100（40 提醒 Claude，提醒后再犯就{mode === 'pause' ? '暂停' : mode === 'block' ? '拦下' : '再提醒'}）
           </Text>
-          <Button key="new" label="清空，开始新任务" plain onPress={() => update($, board, x => ({ ...emptyBoard(x.task + 1), stats: x.stats }))} />
+          <Button key="new" label="清空，开始新任务" plain onPress={() => update($, board, x => ({ ...emptyBoard(x.task + 1), stats: x.stats, awaitingGoal: true }))} />
         </Box>
       )
     }

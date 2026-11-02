@@ -46,6 +46,7 @@ export type Handoff = { t: number; via: 'nested' | 'card' | 'same'; name: string
 export type Board = {
   task: number
   goal: string
+  awaitingGoal?: boolean // 用户主动清空后等下一句；后台不得从旧消息恢复，随 board 跨热重载保留
   extras: string[]
   plan: PlanItem[]
   steps: Step[]
