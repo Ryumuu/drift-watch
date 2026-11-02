@@ -233,6 +233,19 @@ export function pbar(id: string, x: number, cy: number, w: number, h: number, pc
   return out
 }
 
+// 「总目标」「阶段目标」做成浅底小标签，一眼分开大目标和眼下这一段：
+// 总目标用蓝（和航迹里「目标」那个点同色），阶段目标用灰；进度条仍统一用摩卡日落，不靠条的颜色区分
+export function tag(x: number, base: number, label: string, size: number) {
+  const c = label === '总目标' ? 'var(--blue)' : 'var(--norm)'
+  const w = textW(label, size) + size * 0.9, h = size * 1.5
+  const y = base - size * 0.36 - h / 2 // 汉字中心 = 基线上字号×0.36
+  return {
+    w,
+    body: `<rect x="${x}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="${(size * 0.4).toFixed(1)}" style="fill:${c};fill-opacity:.15"/>` +
+      `<text x="${(x + w / 2).toFixed(1)}" y="${base}" text-anchor="middle" style="fill:${c};font-size:${size}px;font-weight:600">${esc(label)}</text>`,
+  }
+}
+
 // 面板上半：结论（大）+ 一句人话（正文）
 export function svgHead(v: View, width: number) {
   const W = Math.max(220, Math.min(560, width))
@@ -330,7 +343,7 @@ export const fit = (s: string, n: number) => {
 // 小条的顺序：结论、偏离度、阶段挨在左边（眼下最要紧的），总目标（暂停时换成暂停原因）整块贴最右
 export function bandSegs(kind: Kind, t: { main: string; sub: string }, br: Brief): Seg[] {
   const segs: Seg[] = []
-  if (br.stage) segs.push({ label: '阶段', text: fit(br.stage, CAP.阶段!), pct: br.stagePct })
+  if (br.stage) segs.push({ label: '阶段目标', text: fit(br.stage, CAP.阶段!), pct: br.stagePct })
   if (kind === 'pause') segs.push({ label: '暂停原因', text: fit(t.sub, CAP.暂停原因!), pct: null, tone: 'error' })
   else segs.push({ label: '总目标', text: fit(br.goal, CAP.总目标!), pct: br.total })
   return segs
@@ -359,7 +372,7 @@ export function svgBand(kind: Kind, t: { main: string; sub: string }, br: Brief,
   body += meter(kind, 1, L.mcy, L.mz, L.mty).body
   // 1px 宽的线以左边为准，中线要减 0.5 再取整，才落在间隔正中且不发虚
   const sep = (x: number) => `<rect x="${Math.round(x - 0.5)}" y="${L.sepY}" width="1" height="${H - L.sepY * 2}" class="track"/>`
-  let left: Seg | undefined = { label: '阶段', text: br.stage || '/', pct: br.stage ? br.stagePct : null }
+  let left: Seg | undefined = { label: '阶段目标', text: br.stage || '/', pct: br.stage ? br.stagePct : null }
   let right: Seg | undefined = { label: '总目标', text: br.goal || '/', pct: br.total }
   const R = Math.max(maxW, 160) - 6
   const x0 = statusW + GAP
@@ -373,9 +386,10 @@ export function svgBand(kind: Kind, t: { main: string; sub: string }, br: Brief,
   if (left && lw < MIN_CELL.阶段) (left = undefined), ({ lw, rw } = split())
   // 一个格子：上面「标签 文字 …… 百分比」，下面进度条撑满整格；没有进度时百分比写「/」、条留空槽
   const cell = (sg: Seg, id: string, x: number, w: number) => {
-    const lab = `<text x="${x}" y="${L.base}" class="l2" style="font-size:${L.lab}px">${esc(sg.label)}</text>`
-    const labW = textW(sg.label, L.lab) + 6
-    const weight = sg.label === '阶段' ? 600 : 500
+    const tg = sg.label === '暂停原因' ? null : tag(x, L.base, sg.label, L.lab)
+    const lab = tg ? tg.body : `<text x="${x}" y="${L.base}" class="l2" style="font-size:${L.lab}px">${esc(sg.label)}</text>`
+    const labW = (tg ? tg.w : textW(sg.label, L.lab)) + 6
+    const weight = sg.label === '阶段目标' ? 600 : 500
     const none = sg.pct === null
     const pt = none ? '/' : pctText(sg.pct)
     const s = fit(sg.text, (w - labW - textW(pt, L.pt) - 10) / L.tx)

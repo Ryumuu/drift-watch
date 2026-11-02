@@ -1,7 +1,7 @@
 {
   "name": "drift-watch",
   "displayName": "偏航观测",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "偏航观测板：对照目标、计划、实际步骤，算偏航指数，偏了提醒你和 Claude，再犯就暂停",
   "author": {
     "name": "Ryumuu"

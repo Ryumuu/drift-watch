@@ -609,7 +609,7 @@ export const register: Register = (on, options) => {
           <Text wrap="wrap">{v.reason}</Text>
           {[
             { label: '总目标', text: br.goal, pct: br.total },
-            { label: '阶段', text: br.stage, pct: br.stagePct },
+            { label: '阶段目标', text: br.stage, pct: br.stagePct },
           ]
             .filter(sg => sg.text)
             .map(sg => (

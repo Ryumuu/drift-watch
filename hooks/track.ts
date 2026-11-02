@@ -1,7 +1,7 @@
 import type { Board, Step } from '../types'
 import { NORMAL_DEG, SEVERE_DEG, currentItem, degOf } from './analyze'
 import type { Brief, Kind, View } from './view'
-import { esc, icon, meter, pbar, pctText, svg, textW, wrap } from './view'
+import { esc, icon, meter, pbar, pctText, svg, tag, textW, wrap } from './view'
 
 // 面板 v2：一个焦点（结论 + 现在在哪），颜色只给异常，文字只标偏了的步骤，次要数字压成一行，细节收进按钮。
 
@@ -67,12 +67,15 @@ export function svgHero(b: Board, v: View, br: Brief, width: number, updated: st
   const rows: { label: string; text: string; pct: number | null; chip?: string; tail?: string }[] = [
     { label: '总目标', text: br.goal, pct: br.total, chip: ver && ver.v >= 2 ? `第 ${ver.v} 版` : undefined },
   ]
-  if (br.stage) rows.push({ label: '阶段', text: br.stage, pct: br.stagePct, tail: cur && b.plan.length > 1 ? `（第 ${b.plan.indexOf(cur) + 1} 段，共 ${b.plan.length} 段）` : '' })
+  if (br.stage) rows.push({ label: '阶段目标', text: br.stage, pct: br.stagePct, tail: cur && b.plan.length > 1 ? `（第 ${b.plan.indexOf(cur) + 1} 段，共 ${b.plan.length} 段）` : '' })
   const BAR = 80
   rows.forEach((r, i) => {
-    let x = 0
-    body += tx(x, y + 4.5, r.label, { size: 12, fill: 'var(--sub)' })
-    x += textW(r.label, 12) + 10
+    // 阶段目标属于总目标：往里缩一格，用一条细线从总目标挂下来
+    let x = i > 0 ? 16 : 0
+    if (i > 0) body += `<path d="M6 ${y - 22}V${y}H${x - 3}" fill="none" style="stroke:var(--faint)" stroke-width="1.2"/>`
+    const tg = tag(x, y + 5, r.label, 12)
+    body += tg.body
+    x += tg.w + 10
     if (r.chip) {
       const cw = textW(r.chip, 10) + 14
       body += `<rect x="${x}" y="${y - 8}" width="${cw}" height="16" rx="8" style="fill:none;stroke:var(--blue)" stroke-width="1"/>`
