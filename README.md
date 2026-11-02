@@ -25,21 +25,38 @@ Claude Code 插件：把你的最初目标、计划和实际操作放在一起�
 
 ## 能看到什么
 
-**输入框上方的小条**：Claude 干活时一直挂着，显示是否跑偏、偏离度、目标与阶段进度；跑偏暂停时直接在条上选下一步。
+**输入框上方的小条**：Claude 干活时一直挂着，显示是否跑偏、偏离度、目标与阶段进度。
+
+正常干活时，小条是绿色的「没跑偏」，不打扰你：
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/band-ok-dark.png">
+  <img src="assets/screenshots/band-ok-light.png" alt="对话界面里输入框上方的偏航观测小条：没跑偏，偏离度低，显示当前阶段和总目标进度" width="800">
+</picture>
+
+跑偏后（这里是同一个报错出了 4 次），小条变红并暂停，直接在条上选下一步：
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/band-dark.png">
   <img src="assets/screenshots/band-light.png" alt="对话界面里输入框上方的偏航观测小条：同一个报错出现了 4 次，已暂停，可选让它换个思路、继续或误报" width="800">
 </picture>
 
-**输入 `/drift` 打开的面板**：结论、目标与阶段进度、航迹（每段线的方向就是那一步朝哪走，偏得越歪离目标越远）、每一步的偏离角、跑偏记录和操作记录。
+**输入 `/drift` 打开的面板**：结论、目标与阶段进度、航迹（每段线的方向就是那一步朝哪走，偏得越歪离目标越远）、每一步的偏离角、跑偏记录和操作记录。左边是正常时，右边是跑偏暂停后：
 
-<p align="center">
+<table>
+<tr><th>正常</th><th>跑偏暂停</th></tr>
+<tr valign="top"><td>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/panel-ok-dark.png">
+  <img src="assets/screenshots/panel-ok-light.png" alt="偏航观测面板：没跑偏，航迹基本是一条直线朝目标走，没有操作按钮" width="400">
+</picture>
+</td><td>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/panel-dark.png">
-  <img src="assets/screenshots/panel-light.png" alt="偏航观测面板：跑偏了已暂停，航迹从起点往目标走，后几步逐渐偏右到 52 度" width="520">
+  <img src="assets/screenshots/panel-light.png" alt="偏航观测面板：跑偏了已暂停，航迹从起点往目标走，后几步逐渐偏右到 52 度，上方有让它换个思路、继续、误报三个按钮" width="400">
 </picture>
-</p>
+</td></tr>
+</table>
 
 <sub>图是用插件自己的绘图代码配一个示例任务（「把博客首页的加载时间降到 2 秒以内」，后几步反复出同一个构建报错）画的，不含真实对话；外框是示意。</sub>
 
