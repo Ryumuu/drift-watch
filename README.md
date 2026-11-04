@@ -94,6 +94,8 @@ Claude Code 插件：把你的最初目标、计划和实际操作放在一起�
 
 默认设置就能用，不用先改。插件会用你自己的 Claude 额度来判断有没有跑偏，插件本身不另收费。
 
+想换别家模型？可选填接口格式、基础地址和模型名，支持 **OpenAI 兼容（`/chat/completions`）和 Anthropic 兼容（`/messages`）** 两种格式。填了自定义地址，会把目标和最近操作摘要发给该地址；费用按对方接口计费，插件不另收费。
+
 <details>
 <summary>展开看详细说明</summary>
 
@@ -104,13 +106,30 @@ Claude Code 插件：把你的最初目标、计划和实际操作放在一起�
 | `escalation` | `remind` 再提醒；`pause` 中断当前轮等你决定；`block` 下次普通工具操作前拦住，让 Claude 解释 | `pause` |
 | `judgeModel` | `haiku` / `sonnet` 概括目标和进度、估计偏离角、可疑时判断离题；`off` 完全不调用这些模型 | `haiku` |
 | `logDir` | 本机绝对路径；空字符串使用默认目录。自定义路径先展开 `~` | `""` |
-| `apiKeychainService` / `apiKeychainAccount` | 可选，macOS 钥匙串中你自己的 Anthropic API 密钥条目名 / 账户名 | `""` |
+| `apiKeychainService` / `apiKeychainAccount` | 可选，macOS 钥匙串中你自己的模型 API 密钥条目名 / 账户名（不填密钥原文） | `""` |
+| `apiFormat` | `anthropic`：Anthropic 兼容；`openai`：OpenAI 兼容的 `/chat/completions` | `anthropic` |
+| `apiBaseUrl` | 接口基础地址，不带 `/messages` 或 `/chat/completions`；Anthropic 留空用官方地址，OpenAI 兼容必须填 | `""` |
+| `apiModel` | 对方的模型名，填了就覆盖 `haiku/sonnet` 的直连模型映射；OpenAI 兼容必须填，`off` 仍不请求 | `""` |
+
+### 想换别家模型
+
+在 `/config` 填下面三项；密钥仍由你自己存入钥匙串或环境变量 `DRIFT_WATCH_API_KEY`，不要贴进聊天。以下是填写示例，**未逐家联网验证**，模型名、开放权限和费用以对方当前提供的为准：
+
+| 填写示例 | `apiFormat` | `apiBaseUrl` | `apiModel` |
+| --- | --- | --- | --- |
+| OpenAI | `openai` | `https://api.openai.com/v1` | `gpt-5-mini` |
+| DeepSeek | `openai` | `https://api.deepseek.com/v1` | `deepseek-chat` |
+| 本地 Ollama | `openai` | `http://localhost:11434/v1` | `qwen3:8b`（需本机已有） |
+
+OpenAI 兼容必须同时填地址和模型名；本地 Ollama 可不带密钥（已有 `DRIFT_WATCH_API_KEY` 时仍会带上）。Anthropic 兼容选 `anthropic`，基础地址会拼上 `/messages`，未填模型名时沿用 `judgeModel` 的映射。三项不改就保持原来行为。
+
+只接受 HTTPS，或主机为 `localhost`、`127.0.0.1`、`[::1]` 的 HTTP；地址不要带账户密码、查询参数或 `#`。配置不齐、地址不合要求、请求超时或失败会记 debug 类别并退回宿主，不挡住工作；401/403 后本会话不再尝试直连。模型开关仍由 `judgeModel` 控制，`off` 完全不请求。
 
 `block` 不是安全沙箱，也不是拦所有操作：计划工具先按原逻辑执行。接手会话又卡在同一处时会暂停。`off` 保留规则与日志；有待办时按完成条目比例显示进度，没有待办时可能没有百分比。
 
 模型开启时，不仅可疑才会请求：插件约每 4 秒检查是否需要后台概括目标、阶段和进度，或给积攒的步骤估角；达到条件才真正发请求。判断与概括会把**目标、补充、计划和最近几步的操作摘要**交给模型，部分请求也含错误摘要。常见凭据格式会脱敏，但这不是对私人内容的完整清除保证。
 
-密钥来源顺序：已配置的 macOS 钥匙串条目 → 环境变量 `DRIFT_WATCH_API_KEY` → Claude Code 自带模型通道。没有自备密钥时消耗你自己的 Claude Code 订阅额度；自备密钥走 Anthropic API 账户计费，请求失败可能退回宿主。直连 API 的超时不保证远端请求已取消。插件不另收费用，也不承诺固定单次成本。`off` 不发插件模型请求，当前 Claude 对话仍正常消耗额度。
+密钥来源顺序：已配置的 macOS 钥匙串条目 → 环境变量 `DRIFT_WATCH_API_KEY`。默认 Anthropic 没有密钥就走 Claude Code 自带模型通道，消耗你自己的订阅额度；自备密钥直连时，按所选接口的账户计费。OpenAI 兼容配置齐全时，即使没有密钥也会尝试直连，便于使用本地服务。直连失败可能退回宿主、消耗订阅额度；超时不保证远端请求已取消。插件不另收费用，也不承诺固定单次成本。`off` 不发插件模型请求，当前 Claude 对话仍正常消耗额度。
 
 不要把 API 密钥发给 AI 或贴进聊天、README、仓库；需要时自己在钥匙串或环境变量配置。向导和体检不会读取钥匙串原值，也不会联网测试密钥。
 
@@ -176,14 +195,14 @@ PY
 
 ## 插件会运行、发送和读取什么
 
-开启模型判断后，插件会把目标、计划和最近操作的摘要交给模型。下面列出了它会发送、读取、写入哪些内容，以及什么时候会替你发消息。
+开启模型判断后，插件会把目标、计划和最近操作的摘要交给模型；填了自定义接口地址，就会把这些摘要发到该地址。下面列出了它会发送、读取、写入哪些内容，以及什么时候会替你发消息。
 
 <details>
 <summary>展开看详细说明</summary>
 
 为了透明，这里把插件代码里所有对外动作列在一起：
 
-- **发送**：模型开启时，把目标、补充、计划、最近操作摘要（部分含错误摘要）发给 Claude Code 自带模型通道；配置了自备密钥时改为直连 `https://api.anthropic.com/v1/messages`。不发往其他任何地址。`judgeModel` 设为 `off` 就不发这些请求。
+- **发送**：模型开启时，把目标、补充、计划、最近操作摘要（部分含错误摘要）发给 Claude Code 自带模型通道；默认配置有自备密钥时直连 `https://api.anthropic.com/v1/messages`。填了 `apiBaseUrl` 时，改发到该地址的 `/messages`（Anthropic 兼容）或 `/chat/completions`（OpenAI 兼容，需同时填模型名）；发前照常脱敏，但不保证清除所有私人内容。配置无效或请求失败会退回宿主。`judgeModel` 设为 `off` 就不发这些请求。
 - **运行**：只有填了 `apiKeychainService` 时，才运行 macOS 自带的 `/usr/bin/security find-generic-password` 读取那一条钥匙串密钥；不运行其他程序，不下载或安装任何包。
 - **读取**：环境变量 `DRIFT_WATCH_API_KEY`（备用密钥来源）和 `HOME`（定位日志目录）；当前会话的消息与轮次（恢复目标用）；自己写的航行日志和 `band-pos.json`。
 - **写入**：只写航行日志目录，以及手动开启调试时的 `/tmp/drift-band-diag.json`。

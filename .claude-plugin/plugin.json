@@ -1,7 +1,7 @@
 {
   "name": "drift-watch",
   "displayName": "偏航观测",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "偏航观测板：对照目标、计划、实际步骤，算偏航指数，偏了提醒你和 Claude，再犯就暂停",
   "author": {
     "name": "Ryumuu"
@@ -39,14 +39,36 @@
     },
     "apiKeychainService": {
       "type": "string",
-      "title": "（可选）钥匙串里 Anthropic API 密钥的条目名",
-      "description": "仅 macOS。填了就用这把密钥直连 API 调小模型；留空则看环境变量 DRIFT_WATCH_API_KEY，都没有就走 Claude Code 自带的模型通道",
+      "title": "（可选）钥匙串里模型 API 密钥的条目名",
+      "description": "仅 macOS。填条目名，不填密钥原文；留空则看环境变量 DRIFT_WATCH_API_KEY。默认 Anthropic 没有密钥就走宿主；OpenAI 兼容接口可不带密钥（如本地 Ollama）",
       "default": ""
     },
     "apiKeychainAccount": {
       "type": "string",
       "title": "（可选）这个钥匙串条目的账户名",
       "description": "条目有账户名时才需要填",
+      "default": ""
+    },
+    "apiFormat": {
+      "type": "string",
+      "title": "（可选）别家模型用哪种接口格式",
+      "description": "默认 anthropic（Anthropic 兼容）；别家常用 openai（OpenAI 兼容的 /chat/completions）。填了自定义地址，会把目标和最近操作摘要发给这个地址；不改设置就沿用原通道",
+      "options": [
+        "anthropic",
+        "openai"
+      ],
+      "default": "anthropic"
+    },
+    "apiBaseUrl": {
+      "type": "string",
+      "title": "（可选）模型接口的基础地址",
+      "description": "如 https://api.openai.com/v1；填了会把目标和最近操作摘要发给这个地址。只接受 HTTPS，或本机 localhost/127.0.0.1/[::1] 的 HTTP；不带账户密码、查询参数或 #。Anthropic 留空用官方地址，openai 必须填写",
+      "default": ""
+    },
+    "apiModel": {
+      "type": "string",
+      "title": "（可选）要调用的模型名",
+      "description": "如 gpt-5-mini、deepseek-chat、qwen3:8b；填写后覆盖 haiku/sonnet 对应模型，off 仍不请求。openai 必须填写；使用自定义地址时，会把目标和最近操作摘要发给这个地址",
       "default": ""
     }
   },

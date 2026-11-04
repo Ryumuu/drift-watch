@@ -72,13 +72,14 @@ let afterCompact = 0 // 压缩完要提醒 Claude 先读日志：0 无 / 1 待�
 // 所以先用设置里的模型，遇到 429 自动改用 4.5 版 Haiku，并记住，之后这个会话直接用它
 const FALLBACK = 'claude-haiku-4-5'
 let useFallback = false
-// 可选：使用者自己的 Anthropic API 密钥（插件设置里填钥匙串条目名，或环境变量 DRIFT_WATCH_API_KEY）。
-// 有密钥就直接用它调 5.5 版，不走会被 429 的后台通道；取不到密钥或请求失败，才退回下面的老路
-// 5.5 版默认先「想」再答，字数额度会被想的过程吃光、回不出字，所以关掉思考
+// 可选：直连 Anthropic / OpenAI 兼容接口。密钥仍取自钥匙串条目或 DRIFT_WATCH_API_KEY。
+// 默认 Anthropic 有密钥才直连；OpenAI 兼容的本地服务可以不带密钥。失败就退回宿主通道。
+// Anthropic 5.5 默认先「想」再答，小字数额度可能回不出字，所以仅在该格式关掉思考。
 const API_MODEL: Record<string, string> = { haiku: 'claude-haiku-5-5', sonnet: 'claude-sonnet-5-5', opus: 'claude-opus-5-5' }
 let apiKey: string | null | undefined
+let apiDisabled = false // 包括无密钥的 OpenAI 请求：401/403 后本会话不再尝试直连
 // 插件设置里的值，register 时填进来
-const cfg = { keychainService: '', keychainAccount: '', logDir: '' }
+const cfg = { keychainService: '', keychainAccount: '', logDir: '', apiFormat: 'anthropic', apiBaseUrl: '', apiModel: '' }
 async function getKey($: EngineInterface) {
   if (apiKey !== undefined) return apiKey
   apiKey = null
@@ -106,15 +107,40 @@ async function logDirOf($: EngineInterface) {
   return home ? `${home}/.claude/drift-watch/航行日志` : `${$.plugin.root}/航行日志`
 }
 async function viaApi($: EngineInterface, model: string, prompt: string, maxTokens: number, timeoutMs: number): Promise<string | null> {
+  if (apiDisabled || model === 'off') return null
+  const openai = cfg.apiFormat === 'openai'
+  if ((cfg.apiFormat !== 'anthropic' && !openai) || (openai && (!cfg.apiBaseUrl || !cfg.apiModel))) {
+    $.ui.log('API category=invalid-config', { to: 'debug' })
+    return null
+  }
+  let base: string
+  try {
+    const address = cfg.apiBaseUrl || 'https://api.anthropic.com/v1'
+    if (!/^https?:\/\//i.test(address)) throw new Error('invalid-url')
+    const url = new URL(address)
+    const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)
+    if ((url.protocol !== 'https:' && !(url.protocol === 'http:' && local)) || url.username || url.password || /[?#]/.test(url.href)) throw new Error('invalid-url')
+    base = url.href.replace(/\/+$/, '')
+  } catch {
+    $.ui.log('API category=invalid-url', { to: 'debug' })
+    return null
+  }
   const key = await getKey($)
-  if (!key) return null
+  if (!openai && !key) return null
   let status: number | undefined
   let category = 'request-error'
   try {
-    const call = $.http.fetch('https://api.anthropic.com/v1/messages', {
+    const headers: Record<string, string> = { 'content-type': 'application/json' }
+    if (openai) {
+      if (key) headers.Authorization = `Bearer ${key}`
+    } else {
+      headers['x-api-key'] = key!
+      headers['anthropic-version'] = '2023-06-01'
+    }
+    const call = $.http.fetch(`${base}/${openai ? 'chat/completions' : 'messages'}`, {
       method: 'POST',
-      headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-      body: JSON.stringify({ model: API_MODEL[model] ?? model, max_tokens: maxTokens, thinking: { type: 'disabled' }, messages: [{ role: 'user', content: prompt }] }),
+      headers,
+      body: JSON.stringify({ model: cfg.apiModel || API_MODEL[model] || model, max_tokens: maxTokens, ...(!openai ? { thinking: { type: 'disabled' } } : {}), messages: [{ role: 'user', content: prompt }] }),
     })
     const res = await Promise.race([call, $.clock.sleep(timeoutMs).then(() => null)])
     if (!res) {
@@ -122,14 +148,18 @@ async function viaApi($: EngineInterface, model: string, prompt: string, maxToke
       return null
     }
     status = res.status
-    if (res.status === 401 || res.status === 403) apiKey = null // 密钥失效就别再试，这个会话改走老路
+    if (res.status === 401 || res.status === 403) {
+      apiKey = null
+      apiDisabled = true
+    }
     if (!res.ok) {
       $.ui.log(`API status=${status} category=http-error`, { to: 'debug' })
       return null
     }
     category = 'invalid-response'
-    const j = JSON.parse(res.text) as { content?: { type: string; text?: string }[] }
-    const text = (j.content ?? []).map(c => (c.type === 'text' ? c.text ?? '' : '')).join('')
+    const j = JSON.parse(res.text) as { content?: { type: string; text?: string }[]; choices?: { message?: { content?: unknown } }[] }
+    const answer = openai ? j.choices?.[0]?.message?.content : (j.content ?? []).map(c => (c.type === 'text' ? c.text ?? '' : '')).join('')
+    const text = typeof answer === 'string' ? answer : ''
     $.ui.log(`API status=${status} category=${text ? 'ok' : 'empty-response'}`, { to: 'debug' })
     return text || null
   } catch {
@@ -370,6 +400,9 @@ export const register: Register = (on, options) => {
   cfg.keychainService = String(options.apiKeychainService ?? '').trim()
   cfg.keychainAccount = String(options.apiKeychainAccount ?? '').trim()
   cfg.logDir = String(options.logDir ?? '').trim()
+  cfg.apiFormat = String(options.apiFormat ?? 'anthropic').trim() || 'anthropic'
+  cfg.apiBaseUrl = String(options.apiBaseUrl ?? '').trim()
+  cfg.apiModel = String(options.apiModel ?? '').trim()
 
   on('session.start', async ($, e, next) => {
     await $.command.register({ name: 'drift', description: '偏航观测：打开面板；/drift new [目标] 开新任务；/drift goal <目标> 改目标' })
